@@ -5,7 +5,7 @@
 <head>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
 <meta charset="UTF-8">
-	<title>Chating</title>
+	<title>chatting</title>
 	<style>
 		*{
 			margin:0;
@@ -23,17 +23,17 @@
 			border-left: 3px solid #FFBB00;
 			margin-bottom: 20px;
 		}
-		.chating{
+		.chatting{
 			background-color: #000;
 			width: 500px;
 			height: 500px;
 			overflow: auto;
 		}
-		.chating .me{
+		.chatting .me{
 			color: #F6F6F6;
 			text-align: right;
 		}
-		.chating .others{
+		.chatting .others{
 			color: #FFE400;
 			text-align: left;
 		}
@@ -44,6 +44,16 @@
 		#yourMsg{
 			display: none;
 		}
+		.msgImg{
+			width: 200px;
+			height: 125px;
+		}
+		.clearBoth{
+			clear: both;
+		}
+		.img{
+			float: right;
+		}
 	</style>
 </head>
 
@@ -51,7 +61,7 @@
 	var ws;
 
 	function wsOpen(){
-		ws = new WebSocket("ws://" + location.host + "/chating");
+		ws = new WebSocket("ws://" + location.host + "/chatting/" + $("#roomNumber").val());
 		wsEvt();
 	}
 		
@@ -64,6 +74,7 @@
 			//메시지를 받으면 동작
 			var msg = data.data;
 			if(msg != null && msg.trim() != ''){
+				//파일 업로드가 아닌 경우 메시지를 뿌려준다.
 				var d = JSON.parse(msg);
 				if(d.type == "getId"){
 					var si = d.sessionId != null ? d.sessionId : "";
@@ -72,14 +83,18 @@
 					}
 				}else if(d.type == "message"){
 					if(d.sessionId == $("#sessionId").val()){
-						$("#chating").append("<p class='me'>나 :" + d.msg + "</p>");	
+						$("#chatting").append("<p class='me'>나 :" + d.msg + "</p>");	
 					}else{
-						$("#chating").append("<p class='others'>" + d.userName + " :" + d.msg + "</p>");
+						$("#chatting").append("<p class='others'>" + d.userName + " :" + d.msg + "</p>");
 					}
 						
 				}else{
 					console.warn("unknown type!")
 				}
+			}else{
+				//파일 업로드한 경우 업로드한 파일을 채팅방에 뿌려준다.
+				var url = URL.createObjectURL(new Blob([msg]));
+				#("#chatting").append("<div class='img'><img class='msgImg' src=" + url + "></div><div class='clearBoth'></div>");
 			}
 		}
 
@@ -105,6 +120,7 @@
 	function send() {
 		var option ={
 			type: "message",
+			roomNumber: $("#roomNumber").val(),
 			sessionId : $("#sessionId").val(),
 			userName : $("#userName").val(),
 			msg : $("#chatting").val()
@@ -112,13 +128,34 @@
 		ws.send(JSON.stringify(option))
 		$('#chatting').val("");
 	}
+	
+	function fileSend() {
+		var file = document.querySelector("#fileUpload").files[0];
+		var fileReader = new FileReader();
+		fileReader.onload = function() {
+			var param = {
+					type: "fileUpload",
+					file: file,
+					roomNumber: $("#roomNumber").val(),
+					sessionId: $("#sessionId").val(),
+					msg: $("#chatting").val(),
+					userName: $("#userName").val()
+			}
+			ws.send(JSON.stringify(param)); //파일 보내기전 메시지를 보내서 파일을 보냄을 명시한다.
+			
+			arrayBuffer = this.result;
+			ws.send(arrayBuffer); //파일 소켓 전송
+		};
+		fileReader.readAsArrayBuffer(file);
+	}
 </script>
 <body>
 	<div id="container" class="container">
-		<h1>채팅</h1>
+		<h1>${roomName}의 채팅방</h1>
 		<input type="hidden" id="sessionId" value="">
+		<input type="hidden" id="roomNumber" value="${roomNumber}">
 		
-		<div id="chating" class="chating">
+		<div id="chatting" class="chatting">
 		</div>
 		
 		<div id="yourName">
@@ -137,6 +174,11 @@
 					<th><input id="chatting" placeholder="보내실 메시지를 입력하세요."></th>
 					<th><button onclick="send()" id="sendBtn">보내기</button></th>
 				</tr>
+				<tr>
+					<th>파일 업로드</th>
+					<th><input type="file" id="fileUpload"></th>
+					<th><button onclick="fileSend()" id="sendFileBtn">파일올리기</button></th>
+				</tr>				
 			</table>
 		</div>
 	</div>

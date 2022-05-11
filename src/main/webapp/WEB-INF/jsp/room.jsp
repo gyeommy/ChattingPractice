@@ -82,7 +82,7 @@
 
 	function getRoom(){
 		commonAjax('/getRoom', "", 'post', function(result){
-			createChatingRoom(result);
+			createChattingRoom(result);
 		});
 	}
 	
@@ -91,7 +91,7 @@
 			var msg = {	roomName : $('#roomName').val()	};
 
 			commonAjax('/createRoom', msg, 'post', function(result){
-				createChatingRoom(result);
+				createChattingRoom(result);
 			});
 
 			$("#roomName").val("");
@@ -99,10 +99,10 @@
 	}
 
 	function goRoom(number, name){
-		location.href="/moveChating?roomName="+name+"&"+"roomNumber="+number;
+		location.href="/moveChatting?roomName="+name+"&"+"roomNumber="+number;
 	}
 
-	function createChatingRoom(res){
+	function createChattingRoom(res){
 		if(res != null){
 			var tag = "<tr><th class='num'>순서</th><th class='room'>방 이름</th><th class='go'></th></tr>";
 			res.forEach(function(d, idx){
